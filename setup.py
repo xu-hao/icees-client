@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="icees-client",
-    version="0.0.1",
+    version="0.0.3",
     author="Colin Curtis, Hao Xu",
     author_email="ckcurtis@renci.org, xuhao@renci.org",
     description="ICEES client",

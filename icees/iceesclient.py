@@ -24,6 +24,11 @@ class DefineCohort ():
         define_cohort_query_json = define_cohort_query.json()
         return define_cohort_query_json
 
+def define_cohort (data):
+    define_cohort_query = DefineCohort().define_cohort_query(json.dumps(data))
+    define_cohort_query_json = define_cohort_query.json()
+    return define_cohort_query_json
+
 class GetCohortDefinition():
     def __init__(self):
         pass
