@@ -100,24 +100,3 @@ class GetDictionary():
         return dictionary_query_json
 
 
-# You can use the work below to treat this module as a CLI utility. Currently, it is configured to accept inputs for and
-# return values from the simplest input, "DefineCohort"... feel free to copy/fork and customize for your own purposes!
-
-parser = argparse.ArgumentParser()
-parser.add_argument("-ftr", "--feature", help="feature name")
-parser.add_argument("-v", "--value", help="feature value")
-parser.add_argument("-op", "--operator", help="feature operator")
-args = parser.parse_args()
-
-if __name__ == '__main__':
-    import sys
-    if len(sys.argv) > 3:
-        icees_define_cohort = DefineCohort()
-        output = icees_define_cohort.run_define_cohort(args.feature, args.value, args.operator)
-        #if 'cohort_id' in str(output):
-        print()
-        print ('Cohort definition accepted')
-        print(output['return value'])
-        print()
-    else:
-        print("Expected script call is of the form: $python3 icees_caller.py -ftr <feature> -val <value> -op \<operator>")
