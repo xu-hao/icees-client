@@ -9,12 +9,33 @@ json_headers = {"Content-Type" : "application/json", "accept": "application/json
 
 logger = logging.getLogger (__name__)
 
+# # These two lines enable debugging at httplib level (requests->urllib3->http.client)
+# # You will see the REQUEST, including HEADERS and DATA, and RESPONSE with HEADERS but without DATA.
+# # The only thing missing will be the response.body which is not logged.
+# try:
+#     import http.client as http_client
+# except ImportError:
+#     # Python 2
+#     import httplib as http_client
+# http_client.HTTPConnection.debuglevel = 1
+
+# # You must initialize logging, otherwise you'll not see debug output.
+# logging.basicConfig()
+# logging.getLogger().setLevel(logging.DEBUG)
+# requests_log = logging.getLogger("requests.packages.urllib3")
+# requests_log.setLevel(logging.DEBUG)
+# requests_log.propagate = True
+
 class FeatureFilter:
     
     def __init__(self, feature, value, operator):
         self.feature = feature
         self.value = value
         self.operator = operator
+    
+
+def identifiers(feature, version="1.0.0", table="patient"):
+    return ICEES().get_identifiers(feature, version=version, table=table)
     
 class Bionames:
 
@@ -68,10 +89,14 @@ class ICEES:
             maximum_p_value = max_p_val,
             cohort_id = cohort_id)
 
-    def get_identifiers (self, feature):
-        query = f"https://icees.renci.org/1.0.0/patient/{feature}/identifiers"
+    def get_identifiers (self, feature, version="1.0.0", table="patient"):
+        query = f"https://icees.renci.org/{version}/{table}/{feature}/identifiers"
         response = requests.get (query, verify=False).json ()
-        return response['return value']['identifiers']
+        ret = response['return value']
+        if isinstance(ret, dict):
+            return ret['identifiers']
+        else:
+            return []
 
     def build_associations (self, feature, type_name, target_id, p_value, edges, nodes):
         identifiers = self.get_identifiers (feature)
@@ -183,8 +208,8 @@ class DefineCohort ():
         define_cohort_query_json = define_cohort_query.json()
         return define_cohort_query_json
 
-def define_cohort (data):
-    define_cohort_query = DefineCohort().define_cohort_query(json.dumps(data))
+def define_cohort (data, year=2010, table="patient", version="2.0.0"):
+    define_cohort_query = DefineCohort().define_cohort_query(json.dumps(data), year=year, table=table, version=version)
     define_cohort_query_json = define_cohort_query.json()
     return define_cohort_query_json
 
@@ -232,6 +257,12 @@ class FeatureAssociation():
         feature_assoc_query_json = feature_assoc_query.json()
         return feature_assoc_query_json
 
+def association_to_all_features(data, cohort_id, year=2010, table="patient", version="2.0.0"):
+    association_to_all_features_query = AssociationToAllFeatures().association_to_all_features_query(json.dumps(data), cohort_id, year=year, table=table, version=version)
+    association_to_all_features_query_json = association_to_all_features_query.json()
+    return association_to_all_features_query_json
+    
+    
 class AssociationToAllFeatures():
     def __init__(self):
         pass
@@ -240,7 +271,7 @@ class AssociationToAllFeatures():
         feature_variable_and_p_value = '{{"feature":{{"{0}":{{"operator":"{2}","value":{1}}}}},"maximum_p_value":{3}}}'.format(feature, value, operator, maximum_p_value)
         return feature_variable_and_p_value
 
-    def assocation_to_all_features_query(self, feature_variable_and_p_value, cohort_id, year=2010, table='patient', version='1.0.0'):
+    def association_to_all_features_query(self, feature_variable_and_p_value, cohort_id, year=2010, table='patient', version='1.0.0'):
         assoc_to_all_features_response = requests.post('https://icees.renci.org/{0}/{1}/{2}/cohort/{3}/associations_to_all_features'.format(version, table, year, cohort_id), data=feature_variable_and_p_value, headers= json_headers, verify=False)
         return assoc_to_all_features_response
 
@@ -248,7 +279,7 @@ class AssociationToAllFeatures():
         feature_variable_and_p_value = self.make_association_to_all_features(feature, value, operator, maximum_p_value)
         print (json.dumps (feature_variable_and_p_value, indent=2))
         print (json.dumps (json.loads(feature_variable_and_p_value), indent=2))
-        assoc_to_all_features_query = self.assocation_to_all_features_query(feature_variable_and_p_value, cohort_id)
+        assoc_to_all_features_query = self.association_to_all_features_query(feature_variable_and_p_value, cohort_id)
         assoc_to_all_features_query_json = assoc_to_all_features_query.json()
         return assoc_to_all_features_query_json
 
@@ -269,13 +300,14 @@ class GetDictionary():
 # You can use the work below to treat this module as a CLI utility. Currently, it is configured to accept inputs for and
 # return values from the simplest input, "DefineCohort"... feel free to copy/fork and customize for your own purposes!
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-ftr", "--feature", help="feature name")
-parser.add_argument("-v", "--value", help="feature value")
-parser.add_argument("-op", "--operator", help="feature operator")
-args = parser.parse_args()
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-ftr", "--feature", help="feature name")
+    parser.add_argument("-v", "--value", help="feature value")
+    parser.add_argument("-op", "--operator", help="feature operator")
+    args = parser.parse_args()
+
     import sys
     if len(sys.argv) > 3:
         icees_define_cohort = DefineCohort()
