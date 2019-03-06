@@ -1,23 +1,40 @@
 import icees.iceesclient as ic
-import json
 import sys
 import numpy as np
+from format import format_tabular
 
-f = sys.argv[1]
+e = sys.argv[1]
+f = sys.argv[2]
 
-cohort = ic.define_cohort({
-    "Prednisone": {
-        "operator": "=",
-        "value":1
+define_cohort_input = {
+    "Prednisone" : {
+        "Prednisone": {
+            "operator": "=",
+            "value": 1
+        }
+    },
+    "TotalEDVisits" : {
+        "TotalEDVisits": {
+            "operator" : ">=",
+            "value": 2
+        }
+    },
+    "TotalEDInpatientVisits" : {
+        "TotalEDInpatientVisits": {
+            "operator" : ">=",
+            "value": 2
+        }
     }
-})
+}
+
+cohort = ic.define_cohort(define_cohort_input[e])
 
 cohort_id = cohort["return value"]["cohort_id"]
 
 association_to_all_features_input = {
-    "Sex": { 
+    "Sex2": {
         "feature":{
-            "Sex": {
+            "Sex2": {
                 "operator": "=",
                 "value":"Female"
             }
@@ -28,7 +45,7 @@ association_to_all_features_input = {
         "feature":{
             "ObesityDx": {
                 "operator": "=",
-                "value":1
+                "value":0
             }
         },
         "maximum_p_value" : 0.1
@@ -37,7 +54,7 @@ association_to_all_features_input = {
         "feature":{
             "DiabetesDx": {
                 "operator": "=",
-                "value":1
+                "value":0
             }
         },
         "maximum_p_value" : 0.1
@@ -63,31 +80,33 @@ def chemical_substance(row):
 
 def extract_data_from_results(l):
     def extract_data_from_result(x):
-        feature_matrix = x["feature_matrix"]
-        a = feature_matrix[0][0]["frequency"]
-        b = feature_matrix[0][1]["frequency"]
-        c = feature_matrix[1][0]["frequency"]
-        d = feature_matrix[1][1]["frequency"]
         feature_name = x["feature_b"]["feature_name"]
         identifiers = ic.identifiers(feature_name.split("_")[0])
-        return {
-            "feature_name": feature_name,
-            "identifiers" : identifiers,
-            "p_value": x["p_value"],
-            "feature_matrix": [[a,b],[c,d]],
-            "risk_ratio":  np.float64(a) * (c + d) / (b * (a + b)),
-            "odds_ration": np.float64(a) * d / (b * c)
-        }
+        x["feature_b"].update({
+            "identifiers": identifiers
+        })
+        feature_matrix = x["feature_matrix"]
+        if len(feature_matrix) == 2:
+            d = feature_matrix[0][0]["frequency"]
+            c = feature_matrix[0][1]["frequency"]
+            b = feature_matrix[1][0]["frequency"]
+            a = feature_matrix[1][1]["frequency"]
+            x.update({
+                "risk_ratio":  np.float64(a) * (c + d) / (c * (a + b)),
+                "odds_ratio": np.float64(a) * d / (b * c)
+            })
+        return x
     return map(extract_data_from_result, l)
 
 
 def run_f(f):
     association_to_all_features = run(association_to_all_features_input[f])
-    # print(k)
+
     association_to_dx = filter(dx, association_to_all_features["return value"])
-    print(json.dumps(list(extract_data_from_results(association_to_dx))))
-    
+    print(format_tabular("dx", list(extract_data_from_results(association_to_dx))))
+
     association_to_chemical_substance = filter(chemical_substance, association_to_all_features["return value"])
-    print(json.dumps(list(extract_data_from_results(association_to_chemical_substance))))
+    print(format_tabular("chemical substance", list(extract_data_from_results(association_to_chemical_substance))))
+
 
 run_f(f)
