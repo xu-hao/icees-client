@@ -14,17 +14,17 @@ def feature_to_text(feature_name, feature_qualifier):
     return feature_name + " " + feature_qualifier["operator"] + " " + op_form[feature_qualifier["operator"]](feature_qualifier)
 
 
-def table_to_text(columns, rows):
-    return tabulate(rows, columns, tablefmt="grid")
+def table_to_text(columns, rows, tablefmt):
+    return tabulate(rows, columns, tablefmt)
 
 
-def format_tabular(term, data):
+def format_tabular(term, data, tablefmt="grid"):
     tables = []
     format_tables(data, tables)
     string = term
     string += "\n"
     for table in tables:
-        string += table_to_text(table[0], table[1])
+        string += table_to_text(table[0], table[1], tablefmt=tablefmt)
         string += "\n"
     return string
 
