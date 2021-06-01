@@ -23,7 +23,7 @@ setuptools.setup(
         "chardet==3.0.4",
         "idna==2.7",
         "requests==2.20.1",
-        "urllib3==1.24.1",
+        "urllib3==1.26.5",
         "tabulate==0.8.3"
     ]
 )
