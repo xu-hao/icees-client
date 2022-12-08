@@ -19,7 +19,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        "certifi==2018.10.15",
+        "certifi==2022.12.7",
         "chardet==3.0.4",
         "idna==2.7",
         "requests==2.20.1",
